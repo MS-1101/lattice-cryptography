@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GGH Cryptosystem — Interactive Protocol</title>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg-2: #0d1424;
+  --panel: #121a2d;
+  --panel-2: #0f1526;
+  --line: #24304a;
+  --line-soft: #1a2338;
+  --ink: #e9edf6;
+  --muted: #8b96b3;
+  --muted-2: #5c6786;
+
+  --private: #35d0a0;
+  --private-bg: rgba(53, 208, 160, .1);
+  --public: #f2b84f;
+  --public-bg: rgba(242, 184, 79, .1);
+  --cipher: #7c9bff;
+  --cipher-bg: rgba(124, 155, 255, .1);
+  --eve: #ff6b81;
+  --eve-bg: rgba(255, 107, 129, .1);
+
+  --success: #35d0a0;
+  --success-bg: rgba(53, 208, 160, .12);
+  --danger: #ff6b81;
+  --danger-bg: rgba(255, 107, 129, .12);
+  --warn: #f2b84f;
+  --warn-bg: rgba(242, 184, 79, .1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(124,155,255,.08), transparent 40%),
+    radial-gradient(circle at 85% 0%, rgba(53,208,160,.06), transparent 35%),
+    var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.app { max-width: 1080px; margin: auto; padding: 28px 20px 60px; }
+
+/* ---------- header ---------- */
+header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, #131c33, #0d1424 65%);
+  border: 1px solid var(--line);
+  padding: 34px 30px;
+  border-radius: 18px;
+  margin-bottom: 20px;
+}
+header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(124,155,255,.35) 1.4px, transparent 1.4px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(120deg, rgba(0,0,0,.9), transparent 70%);
+  opacity: .6;
+}
+header .eyebrow {
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cipher);
+  margin-bottom: 10px;
+}
+header h1 {
+  position: relative;
+  margin: 0 0 10px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+header p {
+  position: relative;
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 60ch;
+}
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  margin: 16px 0;
+}
+.card h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 600;
+}
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.card > p { color: var(--muted); }
+.hidden { display: none !important; }
+
+.eyebrow-sm {
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-2);
+  margin-bottom: 4px;
+}
+
+/* ---------- buttons ---------- */
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin: 4px 6px 4px 0;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  font-size: 14.5px;
+  background: var(--cipher);
+  color: #0a0e1a;
+  transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+}
+button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+button:active:not(:disabled) { transform: translateY(0); }
+button:disabled { background: #26304a; color: var(--muted-2); cursor: not-allowed; }
+button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button.secondary:hover:not(:disabled) { border-color: var(--cipher); }
+
+/* ---------- role selection ---------- */
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+.role-card {
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: inherit;
+  transition: border-color .15s ease, transform .15s ease, background .15s ease;
+}
+.role-card:hover { border-color: var(--role-color, var(--cipher)); transform: translateY(-2px); background: #131c33; }
+.role-card .role-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+.role-card .role-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.role-card .role-desc { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; min-height: 52px; }
+.role-card[data-role="alice"] { --role-color: var(--private); }
+.role-card[data-role="bob"] { --role-color: var(--public); }
+.role-card[data-role="eve"] { --role-color: var(--eve); }
+
+/* ---------- ledger (visibility chips) ---------- */
+.ledger { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.chip.held.v { background: var(--private-bg); color: var(--private); border-color: rgba(53,208,160,.3); }
+.chip.held.v .dot { background: var(--private); }
+.chip.held.w { background: var(--public-bg); color: var(--public); border-color: rgba(242,184,79,.3); }
+.chip.held.w .dot { background: var(--public); }
+.chip.held.e { background: var(--cipher-bg); color: var(--cipher); border-color: rgba(124,155,255,.3); }
+.chip.held.e .dot { background: var(--cipher); }
+.chip.held.m { background: var(--success-bg); color: var(--success); border-color: rgba(53,208,160,.3); }
+.chip.held.m .dot { background: var(--success); }
+.chip.locked { background: transparent; color: var(--muted-2); border-color: var(--line); }
+.chip.locked .dot { background: var(--muted-2); }
+
+/* ---------- grid layout ---------- */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width: 750px) {
+  .grid { grid-template-columns: 1fr; }
+  .role-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- matrices ---------- */
+.matrix-wrap { overflow-x: auto; }
+table.matrix {
+  border-collapse: collapse;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  margin: 4px 0 10px;
+}
+table.matrix td {
+  padding: 7px 14px;
+  text-align: right;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink);
+  min-width: 30px;
+}
+table.matrix tr:last-child td { border-bottom: none; }
+
+.hadamard-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); }
+.hadamard-row strong { color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+.bar-track { flex: 1; max-width: 140px; height: 6px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; }
+
+/* ---------- steps ---------- */
+.step {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 14px 0;
+  background: var(--panel-2);
+  display: flex;
+  gap: 14px;
+}
+.step-num {
+  flex: none;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--line-soft);
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.step-body { flex: 1; min-width: 0; }
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  margin: 8px 0;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.status.wait { background: var(--warn-bg); color: var(--warn); }
+.status.ok { background: var(--success-bg); color: var(--success); }
+.status.fail { background: var(--danger-bg); color: var(--danger); }
+
+.formula {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 17px;
+  text-align: center;
+  padding: 10px;
+  color: var(--cipher);
+  letter-spacing: .03em;
+}
+
+.success-box, .error-box {
+  padding: 16px 18px;
+  border-radius: 12px;
+  font-size: 15px;
+  margin-top: 10px;
+}
+.success-box { background: var(--success-bg); border: 1px solid rgba(53,208,160,.35); color: var(--ink); }
+.error-box { background: var(--danger-bg); border: 1px solid rgba(255,107,129,.35); color: var(--ink); }
+.success-box strong { color: var(--success); }
+.error-box strong { color: var(--danger); }
+
+.small { color: var(--muted); font-size: 13px; }
+
+.cipher-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.cipher-row {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13.5px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--cipher);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--ink);
+}
+.cipher-row.mono-eve { border-left-color: var(--eve); }
+
+label { font-size: 14px; color: var(--muted); }
+textarea, input[type="text"], input:not([type]) {
+  width: 100%; padding: 11px 13px; border: 1px solid var(--line);
+  border-radius: 8px; font-size: 15px; background: var(--panel-2); color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+}
+input[type="range"] { width: 100%; accent-color: var(--cipher); }
+
+.footer-row { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+  <div class="eyebrow">Lattice-based cryptography</div>
+  <h1>🔐 GGH Cryptosystem</h1>
+  <p>Play the protocol from any side. Alice generates a good and a bad basis for the same lattice, Bob encrypts with the bad one, and Eve — who only ever sees the bad one — tries her luck at the closest vector problem.</p>
+</header>
+
+<div class="card" id="roleScreen">
+  <h2>Choose your role</h2>
+  <p style="margin-top:0">Each role sees a different slice of the protocol. The chips below show exactly what that role can and can't access.</p>
+  <div class="role-grid">
+    <button class="role-card" data-role="alice" onclick="startAlice()">
+      <span class="role-icon">👩</span>
+      <div class="role-name">Alice</div>
+      <div class="role-desc">Generates the private good basis and the public bad basis, then decrypts Bob's ciphertext with Babai's algorithm.</div>
+      <div class="ledger">
+        <span class="chip held v"><span class="dot"></span>Private V</span>
+        <span class="chip held w"><span class="dot"></span>Public W</span>
+        <span class="chip held e"><span class="dot"></span>Ciphertext e</span>
+        <span class="chip held m"><span class="dot"></span>Plaintext m</span>
+      </div>
+    </button>
+
+    <button class="role-card" data-role="bob" onclick="startBob()">
+      <span class="role-icon">👨</span>
+      <div class="role-name">Bob</div>
+      <div class="role-desc">Receives Alice's public basis, encrypts a message by adding a small random error vector, and sends it back.</div>
+      <div class="ledger">
+        <span class="chip locked"><span class="dot"></span>Private V</span>
+        <span class="chip held w"><span class="dot"></span>Public W</span>
+        <span class="chip held e"><span class="dot"></span>Ciphertext e</span>
+        <span class="chip held m"><span class="dot"></span>Plaintext m</span>
+      </div>
+    </button>
+
+    <button class="role-card" data-role="eve" onclick="startEve()">
+      <span class="role-icon">🕵️</span>
+      <div class="role-name">Eve</div>
+      <div class="role-desc">An eavesdropper. Intercepts the public basis and the ciphertext in transit, then tries to recover the message without the private key.</div>
+      <div class="ledger">
+        <span class="chip locked"><span class="dot"></span>Private V</span>
+        <span class="chip held w"><span class="dot"></span>Public W</span>
+        <span class="chip held e"><span class="dot"></span>Ciphertext e</span>
+        <span class="chip locked"><span class="dot"></span>Plaintext m</span>
+      </div>
+    </button>
+  </div>
+</div>
+
+<!-- ================= ALICE ================= -->
+<div id="alice" class="hidden">
+
+  <div class="card">
+    <div class="eyebrow-sm">Role</div>
+    <h2>👩 Alice — key owner</h2>
+    <p>You hold both bases for the lattice: a private good basis <strong>V</strong>, and a public bad basis <strong>W</strong> derived from it by an unimodular transform. Rounding coordinates in <strong>V</strong> can recover the intended lattice point for these small perturbations.</p>
+    <div class="ledger">
+      <span class="chip held v"><span class="dot"></span>Private V</span>
+      <span class="chip held w"><span class="dot"></span>Public W</span>
+      <span class="chip held e" id="aliceChipE"><span class="dot"></span>Ciphertext e — pending</span>
+      <span class="chip held m" id="aliceChipM"><span class="dot"></span>Plaintext m — pending</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>🔒 Private key V — good basis</h3>
+      <p class="small">Kept secret. Short, near-orthogonal vectors support coordinate rounding in this example.</p>
+      <div class="matrix-wrap"><div id="aliceV"></div></div>
+      <div class="hadamard-row">
+        Hadamard ratio <strong id="aliceVR"></strong>
+        <span class="bar-track"><span class="bar-fill" id="aliceVRBar" style="background:var(--private)"></span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🔓 Public key W — bad basis</h3>
+      <p class="small">Sent to anyone who wants to encrypt to you. Long, skewed vectors can make direct coordinate rounding fail.</p>
+      <div class="matrix-wrap"><div id="aliceW"></div></div>
+      <div class="hadamard-row">
+        Hadamard ratio <strong id="aliceWR"></strong>
+        <span class="bar-track"><span class="bar-fill" id="aliceWRBar" style="background:var(--public)"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Send the public key</h3>
+        <div id="aliceKeyStatus" class="status wait">🟡 Public key has not been sent yet.</div>
+        <button id="aliceSendKey" onclick="aliceSendKey()">📤 Send Public Key to Bob</button>
+      </div>
+    </div>
+
+    <div id="aliceCipherStage" class="step hidden">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Receive the ciphertext</h3>
+        <p class="small">Bob is using your public key to encrypt a message.</p>
+        <button id="aliceReceive" onclick="aliceReceiveCiphertext()">📥 Receive Ciphertext from Bob</button>
+        <div id="aliceCipherOutput"></div>
+      </div>
+    </div>
+
+    <div id="aliceDecryptStage" class="step hidden">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Decrypt</h3>
+        <p class="small">Run Babai's coordinate-rounding method against your private basis <strong>V</strong> to find a nearby lattice point.</p>
+        <button id="aliceDecrypt" onclick="aliceDecrypt()">🔓 Decrypt with Private Key</button>
+        <div id="aliceDecryptOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-row">
+    <button class="secondary" onclick="restart()">↩ Choose another role</button>
+  </div>
+</div>
+
+
+<!-- ================= BOB ================= -->
+<div id="bob" class="hidden">
+
+  <div class="card">
+    <div class="eyebrow-sm">Role</div>
+    <h2>👨 Bob — sender</h2>
+    <p>Alice has already generated her keys. Receive her public basis, encrypt a message by adding a small random error vector, and send the ciphertext back.</p>
+    <div class="ledger">
+      <span class="chip locked"><span class="dot"></span>Private V — never sent</span>
+      <span class="chip held w" id="bobChipW"><span class="dot"></span>Public W — pending</span>
+      <span class="chip held m"><span class="dot"></span>Plaintext m — yours to choose</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Receive the public key</h3>
+        <div id="bobKeyStatus" class="status wait">🟡 You have not received Alice's public key yet.</div>
+        <button id="bobReceiveKey" onclick="bobReceiveKey()">📥 Receive Public Key from Alice</button>
+        <div id="bobPublicOutput"></div>
+      </div>
+    </div>
+
+    <div id="bobEncryptStage" class="step hidden">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Encrypt your message</h3>
+
+        <label><strong>Message</strong></label>
+        <input id="bobMessage" value="Hello GGH!">
+
+        <br><br>
+
+        <label>
+          <strong>Error bound</strong>
+          <span id="errorValue">5</span>
+        </label>
+        <input id="errorBound" type="range" min="1" max="5" value="5"
+               oninput="document.getElementById('errorValue').textContent=this.value; document.getElementById('errorRangeLabel').textContent='[-'+this.value+', '+this.value+']';">
+        <p class="small" style="margin-top:6px">Each coordinate of the error vector <strong>r</strong> is drawn uniformly from <span id="errorRangeLabel">[-5, 5]</span>. A smaller bound is easier to attack; a larger one is safer but noisier.</p>
+
+        <br>
+        <button onclick="bobEncrypt()">🔐 Encrypt Message</button>
+
+        <div id="bobEncryptOutput"></div>
+      </div>
+    </div>
+
+    <div id="bobSendStage" class="step hidden">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Send the ciphertext</h3>
+        <button onclick="bobSendCiphertext()">📤 Send Ciphertext to Alice</button>
+        <div id="bobSendOutput"></div>
+      </div>
+    </div>
+
+    <div id="bobFeedbackStage" class="step hidden">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Receive feedback</h3>
+        <button onclick="bobReceiveFeedback()">📥 Receive Feedback from Alice</button>
+        <div id="bobFeedbackOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-row">
+    <button class="secondary" onclick="restart()">↩ Choose another role</button>
+  </div>
+</div>
+
+
+<!-- ================= EVE ================= -->
+<div id="eve" class="hidden">
+
+  <div class="card">
+    <div class="eyebrow-sm">Role</div>
+    <h2>🕵️ Eve — eavesdropper</h2>
+    <p>You are watching the channel between Alice and Bob. You can intercept anything sent in the open — the public basis <strong>W</strong> and the ciphertext <strong>e</strong> — but the private basis <strong>V</strong> never travels over the channel, so it never reaches you.</p>
+    <div class="ledger">
+      <span class="chip locked"><span class="dot"></span>Private V — unreachable</span>
+      <span class="chip held w" id="eveChipW"><span class="dot"></span>Public W — pending</span>
+      <span class="chip held e" id="eveChipE"><span class="dot"></span>Ciphertext e — pending</span>
+      <span class="chip locked" id="eveChipM"><span class="dot"></span>Plaintext m — goal</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Intercept the public key</h3>
+        <p class="small">The public basis is broadcast in the open, so anyone on the channel can copy it.</p>
+        <div id="eveKeyStatus" class="status wait">🟡 Public key not intercepted yet.</div>
+        <button id="eveInterceptKey" onclick="eveInterceptKey()">🕵️ Intercept Public Key</button>
+        <div id="evePublicOutput"></div>
+      </div>
+    </div>
+
+    <div id="eveCipherStage" class="step hidden">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Intercept the ciphertext</h3>
+        <p class="small">Bob's ciphertext also crosses the open channel on its way to Alice.</p>
+        <button id="eveInterceptCipher" onclick="eveInterceptCiphertext()">🕵️ Intercept Ciphertext</button>
+        <div id="eveCipherOutput"></div>
+      </div>
+    </div>
+
+    <div id="eveAttackStage" class="step hidden">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Attempt to recover the message</h3>
+        <p class="small">The only basis you have is <strong>W</strong> — the bad one. Run Babai's algorithm against it anyway and see how close you get.</p>
+        <button id="eveAttack" onclick="eveAttemptDecrypt()">🔓 Attempt Decryption with Public Basis</button>
+        <div id="eveAttackOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-row">
+    <button class="secondary" onclick="restart()">↩ Choose another role</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+// GGH mathematical functions
+// ============================================================
+
+// Alice's private good basis: short, close-to-orthogonal vectors.
+const V = [
+  [-97, 19, 19],
+  [-36, 30, 86],
+  [-184, -64, 78]
+];
+
+// A fixed unimodular transformation (determinant ±1) that scrambles V
+// into a long, skewed public basis W. This keeps every playthrough
+// reproducible while still giving W a very low Hadamard ratio, i.e. a
+// genuinely bad basis for solving the closest vector problem.
+const U = [
+  [-42, 113, -43],
+  [3, -8, 3],
+  [10, -27, 10]
+];
+
+let W = multiplyMatrices(U, V);
+
+// Messages Bob might have sent, when the computer is playing Bob's part
+// (i.e. whenever you're viewing the protocol from Alice's or Eve's side).
+const BOB_MESSAGES = [
+  "Hello GGH!",
+  "Goodbye GGH!",
+  "My name is Bob",
+  "Wish you have a good day",
+  "Top secret!"
+];
+
+function randomBobMessage() {
+  return BOB_MESSAGES[randomInt(0, BOB_MESSAGES.length - 1)];
+}
+
+// Game state
+let state = {
+  role: null,
+  keySent: false,
+  keyReceived: false,
+  message: "",
+  blocks: [],
+  ciphertext: [],
+  recovered: [],
+  plaintext: "",
+  sentCiphertext: false,
+  feedbackReady: false,
+  eveGuesses: [],
+  evePlaintext: ""
+};
+
+
+// ------------------------------------------------------------
+// Matrix/vector arithmetic
+// ------------------------------------------------------------
+
+function multiplyMatrices(A, B) {
+  let result = Array(A.length).fill(null)
+    .map(() => Array(B[0].length).fill(0));
+
+  for (let i = 0; i < A.length; i++)
+    for (let j = 0; j < B[0].length; j++)
+      for (let k = 0; k < B.length; k++)
+        result[i][j] += A[i][k] * B[k][j];
+
+  return result;
+}
+
+function vectorTimesMatrix(v, M) {
+  return M[0].map((_, j) =>
+    v.reduce((sum, x, i) => sum + x * M[i][j], 0)
+  );
+}
+
+function dot(a, b) {
+  return a.reduce((s, x, i) => s + x * b[i], 0);
+}
+
+function transpose(A) {
+  return A[0].map((_, j) => A.map(row => row[j]));
+}
+
+function determinant3(A) {
+  return A[0][0]*(A[1][1]*A[2][2]-A[1][2]*A[2][1])
+       - A[0][1]*(A[1][0]*A[2][2]-A[1][2]*A[2][0])
+       + A[0][2]*(A[1][0]*A[2][1]-A[1][1]*A[2][0]);
+}
+
+function inverse3(A) {
+  const d = determinant3(A);
+
+  return [
+    [
+      (A[1][1]*A[2][2]-A[1][2]*A[2][1])/d,
+      (A[0][2]*A[2][1]-A[0][1]*A[2][2])/d,
+      (A[0][1]*A[1][2]-A[0][2]*A[1][1])/d
+    ],
+    [
+      (A[1][2]*A[2][0]-A[1][0]*A[2][2])/d,
+      (A[0][0]*A[2][2]-A[0][2]*A[2][0])/d,
+      (A[0][2]*A[1][0]-A[0][0]*A[1][2])/d
+    ],
+    [
+      (A[1][0]*A[2][1]-A[1][1]*A[2][0])/d,
+      (A[0][1]*A[2][0]-A[0][0]*A[2][1])/d,
+      (A[0][0]*A[1][1]-A[0][1]*A[1][0])/d
+    ]
+  ];
+}
+
+function norm(v) {
+  return Math.sqrt(v.reduce((s,x) => s+x*x, 0));
+}
+
+function hadamardRatio(B) {
+  const det = Math.abs(determinant3(B));
+  const product = B.reduce((p,row) => p * norm(row), 1);
+  return Math.pow(det/product, 1/3);
+}
+
+
+// ------------------------------------------------------------
+// Babai's coordinate-rounding / closest-vertex calculation
+// For this project the basis is treated as rows.
+// ------------------------------------------------------------
+
+function solve3(A, b) {
+  const M = A.map((row,i) => [...row, b[i]]);
+
+  for (let i = 0; i < 3; i++) {
+    let pivot = i;
+    for (let r = i+1; r < 3; r++)
+      if (Math.abs(M[r][i]) > Math.abs(M[pivot][i]))
+        pivot = r;
+
+    [M[i], M[pivot]] = [M[pivot], M[i]];
+
+    for (let r = i+1; r < 3; r++) {
+      const f = M[r][i] / M[i][i];
+      for (let c = i; c < 4; c++)
+        M[r][c] -= f*M[i][c];
+    }
+  }
+
+  let x = Array(3).fill(0);
+
+  for (let i = 2; i >= 0; i--) {
+    let s = M[i][3];
+    for (let j = i+1; j < 3; j++)
+      s -= M[i][j]*x[j];
+    x[i] = s/M[i][i];
+  }
+
+  return x;
+}
+
+function babai(B, target) {
+  const Bt = transpose(B);
+  const coeffReal = solve3(Bt, target);
+  const coeff = coeffReal.map(x => Math.round(x));
+  const closest = vectorTimesMatrix(coeff, B);
+
+  return {closest, coeff, coeffReal};
+}
+
+
+// ------------------------------------------------------------
+// Message conversion
+// ------------------------------------------------------------
+
+function stringToNumbers(message) {
+  return Array.from(message).map(c => c.codePointAt(0));
+}
+
+function splitMessage(numbers, dimension) {
+  const blocks = [];
+
+  for (let i = 0; i < numbers.length; i += dimension) {
+    let block = numbers.slice(i, i+dimension);
+    while (block.length < dimension) block.push(0);
+    blocks.push(block);
+  }
+
+  return blocks;
+}
+
+function numbersToString(vectors, originalLength) {
+  let numbers = vectors.flat().slice(0, originalLength);
+  return String.fromCodePoint(...numbers);
+}
+
+// Same idea, but tolerant of the nonsense values a failed attack can
+// produce (negative numbers, or numbers outside the Unicode range).
+function safeNumbersToString(vectors, originalLength) {
+  let numbers = vectors.flat().slice(0, originalLength);
+  return numbers.map(n => {
+    if (!Number.isFinite(n) || n < 0 || n > 0x10FFFF) return "▢";
+    try { return String.fromCodePoint(n); } catch (err) { return "▢"; }
+  }).join("");
+}
+
+
+// ------------------------------------------------------------
+// Encryption / decryption
+// ------------------------------------------------------------
+
+function randomInt(min, max) {
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+function encrypt(blocks, W, errorBound) {
+  return blocks.map(m => {
+    const r = Array(3).fill(0).map(
+      () => randomInt(-errorBound, errorBound)
+    );
+
+    const mW = vectorTimesMatrix(m, W);
+    const e = mW.map((x,i) => x+r[i]);
+
+    return {m, r, mW, e};
+  });
+}
+
+function decrypt(ciphertexts, V, W) {
+  const recovered = [];
+
+  for (const item of ciphertexts) {
+    const result = babai(V, item.e);
+    const invW = inverse3(W);
+
+    const mFloat = vectorTimesMatrix(result.closest, invW);
+    const m = mFloat.map(x => Math.round(x));
+
+    recovered.push({
+      e: item.e,
+      closest: result.closest,
+      coeff: result.coeff,
+      m
+    });
+  }
+
+  return recovered;
+}
+
+// This demonstration has Eve round coordinates directly in the public basis.
+// The rounded coefficients are her guess for m; a skewed basis can make it fail.
+// Other attacks, including LLL reduction, are discussed in the project notes.
+function attackWithPublicBasis(ciphertexts, W) {
+  return ciphertexts.map(item => {
+    const result = babai(W, item.e);
+    return {
+      e: item.e,
+      closest: result.closest,
+      guess: result.coeff
+    };
+  });
+}
+
+
+// ============================================================
+// Display helpers
+// ============================================================
+
+function matrixTable(A) {
+  return `<div class="matrix-wrap"><table class="matrix">` +
+    A.map(row => `<tr>${row.map(v => `<td>${v}</td>`).join("")}</tr>`).join("") +
+    `</table></div>`;
+}
+
+function ciphertextText(items, cls) {
+  return `<div class="cipher-list">` + items.map((x,i) =>
+    `<div class="cipher-row ${cls||''}">Block ${i+1}: [${x.e.join(", ")}]</div>`
+  ).join("") + `</div>`;
+}
+
+function hadamardBar(ratio) {
+  return Math.max(4, Math.min(100, Math.round(ratio*100))) + "%";
+}
+
+function show(id, html) {
+  document.getElementById(id).innerHTML = html;
+}
+
+
+// ============================================================
+// Alice
+// ============================================================
+
+function freshState(role) {
+  return {
+    role,
+    keySent: false,
+    keyReceived: false,
+    message: "",
+    blocks: [],
+    ciphertext: [],
+    recovered: [],
+    plaintext: "",
+    sentCiphertext: false,
+    feedbackReady: false,
+    eveGuesses: [],
+    evePlaintext: ""
+  };
+}
+
+function startAlice() {
+  state = freshState("Alice");
+
+  document.getElementById("roleScreen").classList.add("hidden");
+  document.getElementById("alice").classList.remove("hidden");
+
+  show("aliceV", matrixTable(V));
+  show("aliceW", matrixTable(W));
+
+  const vr = hadamardRatio(V), wr = hadamardRatio(W);
+  show("aliceVR", vr.toFixed(5));
+  show("aliceWR", wr.toFixed(5));
+  document.getElementById("aliceVRBar").style.width = hadamardBar(vr);
+  document.getElementById("aliceWRBar").style.width = hadamardBar(wr);
+}
+
+function aliceSendKey() {
+  state.keySent = true;
+
+  show("aliceKeyStatus",
+    `<div class="status ok">🟢 Public key W has been sent to Bob.</div>`
+  );
+
+  document.getElementById("aliceSendKey").disabled = true;
+  document.getElementById("aliceCipherStage").classList.remove("hidden");
+}
+
+function aliceReceiveCiphertext() {
+  // Computer acts as Bob.
+  state.message = randomBobMessage();
+  const numbers = stringToNumbers(state.message);
+  state.blocks = splitMessage(numbers, 3);
+
+  state.ciphertext = encrypt(state.blocks, W, 5);
+  state.keyReceived = true;
+
+  let html = `
+    <div class="status ok">🟢 Ciphertext received from Bob.</div>
+    <p class="small">All you have so far is e = mW + r. The message underneath is still unknown to you until you decrypt it.</p>
+    <p><strong>Ciphertext e:</strong></p>
+    ${ciphertextText(state.ciphertext)}
+  `;
+
+  show("aliceCipherOutput", html);
+  document.getElementById("aliceReceive").disabled = true;
+  document.getElementById("aliceDecryptStage").classList.remove("hidden");
+  show("aliceChipE", `<span class="dot"></span>Ciphertext e — captured`);
+}
+
+function aliceDecrypt() {
+  state.recovered = decrypt(state.ciphertext, V, W);
+
+  const vectors = state.recovered.map(x => x.m);
+  state.plaintext = numbersToString(vectors, Array.from(state.message).length);
+
+  let details = state.recovered.map((x,i) => `
+    <p><strong>Block ${i+1}</strong></p>
+    <p class="small">Ciphertext:</p>
+    ${matrixTable([x.e])}
+    <p class="small">Babai(V, e) → lattice point found by rounding:</p>
+    ${matrixTable([x.closest])}
+    <p class="small">Recovered m:</p>
+    ${matrixTable([x.m])}
+  `).join("");
+
+  show("aliceDecryptOutput", `
+    ${details}
+    <div class="success-box">
+      ✓ <strong>Decryption successful.</strong><br><br>
+      Recovered plaintext: <strong>${state.plaintext}</strong>
+    </div>
+  `);
+
+  document.getElementById("aliceDecrypt").disabled = true;
+  show("aliceChipM", `<span class="dot"></span>Plaintext m — recovered`);
+}
+
+
+// ============================================================
+// Bob
+// ============================================================
+
+function startBob() {
+  state = freshState("Bob");
+
+  document.getElementById("roleScreen").classList.add("hidden");
+  document.getElementById("bob").classList.remove("hidden");
+}
+
+function bobReceiveKey() {
+  state.keyReceived = true;
+
+  show("bobKeyStatus",
+    `<div class="status ok">🟢 Public key received from Alice.</div>`
+  );
+
+  const wr = hadamardRatio(W);
+  show("bobPublicOutput", `
+    <p><strong>Alice's public key W:</strong></p>
+    ${matrixTable(W)}
+    <div class="hadamard-row">
+      Hadamard ratio <strong>${wr.toFixed(5)}</strong>
+      <span class="bar-track"><span class="bar-fill" style="background:var(--public); width:${hadamardBar(wr)}"></span></span>
+    </div>
+    <p class="small">
+      Alice's private basis V is never sent — it isn't available to you.
+    </p>
+  `);
+
+  document.getElementById("bobReceiveKey").disabled = true;
+  document.getElementById("bobEncryptStage").classList.remove("hidden");
+  show("bobChipW", `<span class="dot"></span>Public W — received`);
+}
+
+function bobEncrypt() {
+  state.message = document.getElementById("bobMessage").value;
+
+  if (!state.message) {
+    show("bobEncryptOutput",
+      `<div class="error-box">Please enter a message.</div>`
+    );
+    return;
+  }
+
+  const errorBound =
+    Number(document.getElementById("errorBound").value);
+
+  const numbers = stringToNumbers(state.message);
+  state.blocks = splitMessage(numbers, 3);
+  state.ciphertext = encrypt(state.blocks, W, errorBound);
+
+  show("bobEncryptOutput", `
+    <div class="status ok">🟢 Message encrypted.</div>
+
+    <p><strong>Message blocks m:</strong></p>
+    ${matrixTable(state.blocks)}
+
+    <div class="formula">e = mW + r</div>
+
+    <p><strong>Ciphertext e:</strong></p>
+    ${ciphertextText(state.ciphertext)}
+  `);
+
+  document.getElementById("bobSendStage").classList.remove("hidden");
+}
+
+function bobSendCiphertext() {
+  state.sentCiphertext = true;
+
+  show("bobSendOutput", `
+    <div class="status ok">
+      🟢 Ciphertext sent to Alice.
+    </div>
+    <p class="small">Alice is now decrypting using her private key V…</p>
+  `);
+
+  // Computer acts as Alice.
+  state.recovered = decrypt(state.ciphertext, V, W);
+  state.plaintext = numbersToString(
+    state.recovered.map(x => x.m),
+    Array.from(state.message).length
+  );
+
+  state.feedbackReady = true;
+
+  document.getElementById("bobFeedbackStage").classList.remove("hidden");
+}
+
+function bobReceiveFeedback() {
+  const success = state.plaintext === state.message;
+
+  show("bobFeedbackOutput",
+    success
+      ? `<div class="success-box">
+          ✓ <strong>Alice successfully decrypted your message.</strong><br><br>
+          Recovered plaintext: <strong>${state.plaintext}</strong>
+         </div>`
+      : `<div class="error-box">
+          ✗ Alice could not correctly decrypt the message.
+         </div>`
+  );
+}
+
+
+// ============================================================
+// Eve
+// ============================================================
+
+function startEve() {
+  state = freshState("Eve");
+
+  document.getElementById("roleScreen").classList.add("hidden");
+  document.getElementById("eve").classList.remove("hidden");
+}
+
+function eveInterceptKey() {
+  state.keyReceived = true;
+
+  show("eveKeyStatus",
+    `<div class="status ok">🟢 Public key W intercepted.</div>`
+  );
+
+  const vr = hadamardRatio(V), wr = hadamardRatio(W);
+  show("evePublicOutput", `
+    <p><strong>Intercepted public key W:</strong></p>
+    ${matrixTable(W)}
+    <div class="hadamard-row">
+      Hadamard ratio <strong>${wr.toFixed(5)}</strong>
+      <span class="bar-track"><span class="bar-fill" style="background:var(--eve); width:${hadamardBar(wr)}"></span></span>
+    </div>
+    <p class="small">
+      For comparison, Alice's private basis V has Hadamard ratio <strong>${vr.toFixed(5)}</strong> —
+      much closer to 1, i.e. much closer to orthogonal. You don't have V, and never will.
+    </p>
+  `);
+
+  document.getElementById("eveInterceptKey").disabled = true;
+  document.getElementById("eveCipherStage").classList.remove("hidden");
+  show("eveChipW", `<span class="dot"></span>Public W — intercepted`);
+}
+
+function eveInterceptCiphertext() {
+  // Computer replays the same Alice/Bob exchange in the background.
+  // Eve sees the ciphertext on the wire, not the plaintext behind it.
+  state.message = randomBobMessage();
+  const numbers = stringToNumbers(state.message);
+  state.blocks = splitMessage(numbers, 3);
+  state.ciphertext = encrypt(state.blocks, W, 5);
+
+  show("eveCipherOutput", `
+    <div class="status ok">🟢 Ciphertext intercepted in transit.</div>
+    <p class="small">You see only e = mW + r. The plaintext m and the private basis V never crossed the channel.</p>
+    <p><strong>Intercepted ciphertext e:</strong></p>
+    ${ciphertextText(state.ciphertext, "mono-eve")}
+  `);
+
+  document.getElementById("eveInterceptCipher").disabled = true;
+  document.getElementById("eveAttackStage").classList.remove("hidden");
+  show("eveChipE", `<span class="dot"></span>Ciphertext e — intercepted`);
+}
+
+function eveAttemptDecrypt() {
+  const attempts = attackWithPublicBasis(state.ciphertext, W);
+  state.eveGuesses = attempts.map(x => x.guess);
+  state.evePlaintext = safeNumbersToString(state.eveGuesses, Array.from(state.message).length);
+
+  const success = state.evePlaintext === state.message;
+
+  let details = attempts.map((x,i) => `
+    <p><strong>Block ${i+1}</strong></p>
+    <p class="small">Ciphertext:</p>
+    ${matrixTable([x.e])}
+    <p class="small">Babai(W, e) → lattice point found by rounding in the public basis:</p>
+    ${matrixTable([x.closest])}
+    <p class="small">Guessed block:</p>
+    ${matrixTable([x.guess])}
+  `).join("");
+
+  show("eveAttackOutput", `
+    ${details}
+    ${success ? `
+      <div class="success-box">
+        ✓ <strong>This attempt happened to land on the right lattice point.</strong><br><br>
+        Recovered text: <strong>${state.evePlaintext}</strong><br>
+        <span class="small">This can occasionally happen with a small error bound — try Bob's role with the error bound turned down to see it more often. With a properly sized error and a genuinely bad public basis like this one, it's rare.</span>
+      </div>
+    ` : `
+      <div class="error-box">
+        ✗ <strong>Decryption failed.</strong><br><br>
+        Best guess: <strong>${state.evePlaintext}</strong><br>
+        Actual message: <strong>${state.message}</strong><br><br>
+        <span class="small">
+          This version of Babai's method rounds the target's coordinates in the supplied basis. With W's Hadamard ratio near
+          ${hadamardRatio(W).toFixed(3)} (far from 1), W's "cells" are long and skewed, so rounding coordinate-by-coordinate
+          can land on an unintended lattice point and decode to incorrect characters. Alice's basis V, with a much higher
+          Hadamard ratio, supports recovery for the small errors used here.
+        </span>
+      </div>
+    `}
+  `);
+
+  document.getElementById("eveAttack").disabled = true;
+  show("eveChipM", success
+    ? `<span class="dot"></span>Plaintext m — recovered`
+    : `<span class="dot"></span>Plaintext m — still unknown`
+  );
+}
+
+
+// ============================================================
+// Restart
+// ============================================================
+
+function restart() {
+  document.getElementById("alice").classList.add("hidden");
+  document.getElementById("bob").classList.add("hidden");
+  document.getElementById("eve").classList.add("hidden");
+  document.getElementById("roleScreen").classList.remove("hidden");
+
+  state = freshState(null);
+}
+</script>
+</body>
+</html>

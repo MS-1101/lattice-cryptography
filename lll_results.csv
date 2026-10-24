@@ -1,0 +1,5 @@
+case,delta,swaps,hadamard_ratio,shortest_basis_vector_norm,absolute_determinant
+input_basis,,,0.46908,51.91339,777406251
+original_ordering,0.75,19,0.88824,26.73948,777406251
+reversed_ordering,0.75,11,0.87897,26.73948,777406251
+original_ordering,0.99,22,0.87897,26.73948,777406251
