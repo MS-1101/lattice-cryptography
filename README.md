@@ -59,9 +59,9 @@ Run `python ggh_game.py` for the terminal demonstration, or download and open `g
 
 The randomized extension can be run with `python ggh_crypto.py`. Its messages, keys, and success counts vary between runs; the historical 30-trial experiment is described in the project notes, pp. 98–110.
 
-## Scope and reading
+## Further reading
 
-These are small educational examples using floating-point linear algebra and ordinary pseudorandom generators. They explain mechanisms; they are not suitable for protecting data or evaluating modern cryptographic parameter security. LLL finds a reduced basis and does not generally certify an exact shortest vector.
+The implementations use floating-point linear algebra and Python/NumPy random generators. [Methods](methods.md) explains the arithmetic conventions and parameter choices.
 
 The [notes](lattice_notes.pdf) cover algebra (pp. 4–25), lattices (pp. 26–49), GGH and NTRUEncrypt (pp. 64–78), reduction algorithms (pp. 79–89), and small cryptanalysis examples (pp. 90–93). Page numbers refer to the printed pages in the PDF. The report's GGH and NTRU attack discussions are worked mathematical examples; dedicated attack scripts are not included.
 
